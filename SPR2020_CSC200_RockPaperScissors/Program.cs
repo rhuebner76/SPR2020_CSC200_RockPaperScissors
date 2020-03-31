@@ -7,11 +7,20 @@ using System.Threading.Tasks;
 namespace CSC200_RockPaperScissors
 {
     // SOLID
+    // -----
     // S - SRP - Single Responsibility Principle 
     //      An object should have only one purpose
     // O - OCP - Open Closed Principle
     //      And object should be open for extension, closed for modification
-    // L - Liskov Substitution Principle
+    // L - LSP - Liskov Substitution Principle
+    //      Any object object inheriting an interface should implement that interface
+    // I - ISP - Interface Segregation Principle
+    //      An object should expose only what what it needs to and we should code to that interface
+    // D - DIP - Dependency Inversion Principle 
+    // -------
+    // DRY - Don't Repeat Yourself
+    // -------
+
     class Player
     {
         // 
@@ -32,128 +41,43 @@ namespace CSC200_RockPaperScissors
         {
             get { return this._value; }
         }
+    }
 
-        public int CompareTo(Hand other)
+    class Rule
+    {
+        private readonly string _handA;
+        private readonly string _handB;
+        private readonly int _result;
+
+        // responsibility: given two hands, what it is the outcome
+        public Rule(string handA, string handB, int result)
         {
-            // returns -1 when this hand is less then other (this hand loses)
-            // returns 0 when this hand is equal to other   (this hand ties)
-            // return 1 when this hand is great then other  (this hand wins)
+            _handA = handA;
+            _handB = handB;
+            _result = result;
+        }
 
-            if (this.Value == other.Value)
-                return 0;
+        // methods
+        public bool CanEvaluate(string handA, string handB)
+        {
+            return _handA == handA && _handB == handB;
+        }
 
-            if (this.Value == "rock")
-            {
-                if (other.Value == "scissors")
-                {
-                    return 1; // rock crushes scissors
-                }
-                else if (other.Value == "spock")
-                {
-                    return -1; // spock vaporizes rock
-                }
-                else if (other.Value == "lizard")
-                {
-                    return 1; // rock crushes lizard
-                }
-                else if (other.Value == "paper")
-                {
-                    return -1; // paper covers rock
-                }
-            }
-
-            if (this.Value == "paper")
-            {
-                if (other.Value == "rock")
-                {
-                    return 1; // paper covers rock
-                }
-                else if (other.Value == "spock")
-                {
-                    return 1; // paper disproves spock
-                }
-                else if (other.Value == "lizard")
-                {
-                    return -1; // paper gets ate by lizard
-                }
-                else if (other.Value == "scissors")
-                {
-                    return -1; // paper gets cut scissors
-                }
-            }
-
-            if (this.Value == "scissors")
-            {
-                if (other.Value == "paper")
-                {
-                    return 1;
-                }
-                else if (other.Value == "spock")
-                {
-                    return -1; // scissors smashed by spock
-                }
-                else if (other.Value == "lizard")
-                {
-                    return 1; // scissors decapitates lizard
-                }
-                else if (other.Value == "rock")
-                {
-                    return -1; // 
-                }
-            }
-
-            if (this.Value == "spock")
-            {
-                if (other.Value == "paper")
-                {
-                    return -1;
-                }
-                else if (other.Value == "scissors")
-                {
-                    return 1;
-                }
-                else if (other.Value == "lizard")
-                {
-                    return -1;
-                }
-                else if (other.Value == "rock")
-                {
-                    return 1; // 
-                }
-            }
-
-            if (this.Value == "lizard")
-            {
-                if (other.Value == "paper")
-                {
-                    return 1;
-                }
-                else if (other.Value == "scissors")
-                {
-                    return -1;
-                }
-                else if (other.Value == "spock")
-                {
-                    return 1;
-                }
-                else if (other.Value == "rock")
-                {
-                    return -1; // 
-                }
-            }
-
-            return 0;
+        public int Result()
+        {
+            return _result;
         }
     }
 
     class GameManager
     {
         // data fields
+        private ICollection<Rule> _rules;
 
         // constructor
-        public GameManager()
-        {
-
+        public GameManager(ICollection<Rule> rules)
+        {   
+            _rules = rules;
         }
 
         private Hand GetUserHand()
@@ -255,12 +179,21 @@ namespace CSC200_RockPaperScissors
             {
                 // get a hand for the computer
                 Hand computerHand = GenerateRandomHand();
+                int comparison = 0;
 
-                if (computerHand.CompareTo(userHand) < 0)
+                foreach (Rule rule in _rules)
+                {
+                    if (rule.CanEvaluate(userHand.Value, computerHand.Value))
+                    {
+                        comparison = rule.Result();
+                    }
+                }
+
+                if (comparison > 0)
                 {
                     Console.WriteLine("The player chose {0} and computer chose {1}, player wins!", userHand.Value, computerHand.Value);
                 }
-                else if (computerHand.CompareTo(userHand) > 0)
+                else if (comparison < 0)
                 {
                     Console.WriteLine("The player chose {0} and computer chose {1}, player loses!", userHand.Value, computerHand.Value);
                 }
@@ -281,11 +214,67 @@ namespace CSC200_RockPaperScissors
     {
         static void Main(string[] args)
         {
-            GameManager manager = new GameManager();
+            GameManager manager = new GameManager(RockPaperScissorsLizardSpockRules());
 
             manager.StartPlay();
 
             Console.ReadLine();
+        }
+
+        static ICollection<Rule> RockPaperScissorsRules()
+        {
+            ICollection<Rule> rules = new List<Rule>();
+            rules = new List<Rule>();
+            rules.Add(new Rule("rock", "scissors", 1));
+            rules.Add(new Rule("rock", "paper", -1));
+            rules.Add(new Rule("rock", "rock", 0));
+            
+            rules.Add(new Rule("paper", "rock", 1));
+            rules.Add(new Rule("paper", "scissors", -1));
+            rules.Add(new Rule("paper", "paper", 0));
+            
+            rules.Add(new Rule("scissors", "paper", 1));
+            rules.Add(new Rule("scissors", "rock", -1));
+            rules.Add(new Rule("scissors", "scissors", 0));
+
+            return rules;
+        }
+
+        static ICollection<Rule> RockPaperScissorsLizardSpockRules()
+        {
+            ICollection<Rule> rules = new List<Rule>();
+            rules = new List<Rule>();
+            rules.Add(new Rule("rock", "scissors", 1));
+            rules.Add(new Rule("rock", "paper", -1));
+            rules.Add(new Rule("rock", "rock", 0));
+            rules.Add(new Rule("rock", "lizard", 1));
+            rules.Add(new Rule("rock", "spock", -1));
+
+            rules.Add(new Rule("paper", "rock", 1));
+            rules.Add(new Rule("paper", "scissors", -1));
+            rules.Add(new Rule("paper", "paper", 0));
+            rules.Add(new Rule("paper", "lizard", -1));
+            rules.Add(new Rule("paper", "spock", 1));
+
+            rules.Add(new Rule("scissors", "paper", 1));
+            rules.Add(new Rule("scissors", "rock", -1));
+            rules.Add(new Rule("scissors", "scissors", 0));
+            rules.Add(new Rule("scissors", "lizard", -1));
+            rules.Add(new Rule("scissors", "spock", 1));
+
+            rules.Add(new Rule("lizard", "paper", 1));
+            rules.Add(new Rule("lizard", "rock", -1));
+            rules.Add(new Rule("lizard", "lizard", 0));
+            rules.Add(new Rule("lizard", "scissors", -1));
+            rules.Add(new Rule("lizard", "spock", 1));
+
+            rules.Add(new Rule("spock", "rock", 1));
+            rules.Add(new Rule("spock", "scissors", 1));
+            rules.Add(new Rule("spock", "spock", 0));
+            rules.Add(new Rule("spock", "paper", -1));
+            rules.Add(new Rule("spock", "lizard", -1));
+
+            return rules;
         }
     }
 }
